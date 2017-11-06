@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="fuliwd Maven Webapp:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="fuliwd.war">
+      <element id="artifact" artifact-name="fuliwd Maven Webapp:war exploded" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,23 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:motan="http://api.weibo.com/schema/motan"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+	  	http://api.weibo.com/schema/motan
+	  	http://api.weibo.com/schema/motan.xsd">
+	
+	<!-- zookeeper -->
+	<motan:registry regProtocol="zookeeper" name="regCenter"
+		connectTimeout="30000" address="10.30.11.17:2181,10.30.11.17:2182,10.30.11.18:2181" />
+
+	<!--consumer-->
+	<motan:basicReferer id="riskWebConfig" group="KX_risk_basic"
+						module="KX_risk_basic" registry="regCenter" requestTimeout="300000" retries="3" />
+
+
+	<motan:referer id="busTkbAnsDtService" interface="com.kuaixin.risk.api.service.BusTkbAnsDtService"
+				   basicReferer="riskWebConfig"  check="false"/>
+
+
+</beans>

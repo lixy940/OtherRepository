@@ -1,0 +1,92 @@
+mongodb集群分片操作
+
+
+#第一步 分别在每个服务器上创建目录
+
+mkdir -p /data/mongodbtest/mongos/log;mkdir -p /data/mongodbtest/config/data;mkdir -p /data/mongodbtest/config/log;mkdir -p /data/mongodbtest/shard1/data;mkdir -p /data/mongodbtest/shard1/log
+ 	
+
+mkdir -p /data/mongodbtest/shard2/data;mkdir -p /data/mongodbtest/shard2/log;mkdir -p /data/mongodbtest/shard3/data;mkdir -p /data/mongodbtest/shard3/log
+
+
+
+第一次启动初始化
+
+//在三台机器上都执行这条命令
+bin/mongod --configsvr --replSet cfgReplSet --dbpath /data/mongodbtest/config/data --port 21000 --logpath /data/mongodbtest/config/log/config.log --fork
+
+bin/mongo --host 192.168.46.133 --port 21000
+
+rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"192.168.46.133:21000"},{_id:1,host:"192.168.46.134:21000"},{_id:2,host:"192.168.46.135:21000"}]})
+
+//三台机器分别执行
+//分片一 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard1ReplSet --port 22001 --dbpath /data/mongodbtest/shard1/data  --logpath /data/mongodbtest/shard1/log/shard1.log --fork --nojournal
+//任选一台机器运行
+bin/mongo --host 192.168.46.133 --port 22001
+
+
+rs.initiate({_id:"shard1ReplSet",members:[{_id:0,host:"192.168.46.133:22001"},{_id:1,host:"192.168.46.134:22001"},{_id:2,host:"192.168.46.135:22001"}]})
+
+//分片二 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard2ReplSet --port 22002 --dbpath /data/mongodbtest/shard2/data  --logpath /data/mongodbtest/shard2/log/shard2.log --fork --nojournal  
+//任选一台机器运行
+bin/mongo --host 192.168.46.133 --port 22002
+
+rs.initiate({_id:"shard2ReplSet",members:[{_id:0,host:"192.168.46.133:22002"},{_id:1,host:"192.168.46.134:22002"},{_id:2,host:"192.168.46.135:22002"}]})
+//分片三 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard3ReplSet --port 22003 --dbpath /data/mongodbtest/shard3/data  --logpath /data/mongodbtest/shard3/log/shard3.log --fork --nojournal 
+//任选一台机器运行
+bin/mongo --host 192.168.46.133 --port 22003
+
+rs.initiate({_id:"shard3ReplSet",members:[{_id:0,host:"192.168.46.133:22003"},{_id:1,host:"192.168.46.134:22003"},{_id:2,host:"192.168.46.135:22003"}]})
+
+
+
+bin/mongos  --configdb cfgReplSet/192.168.46.133:21000,192.168.46.134:21000,192.168.46.135:21000 --port  20000  --logpath  /data/mongodbtest/mongos/log/mongos.log --fork
+
+//mongos调用
+bin/mongo --host 192.168.46.133 --port 20000
+
+//添加分片
+sh.addShard("shard1ReplSet/192.168.46.133:22001,192.168.46.134:22001,192.168.46.135:22001")
+sh.addShard("shard2ReplSet/192.168.46.133:22002,192.168.46.134:22002,192.168.46.135:22002")
+sh.addShard("shard3ReplSet/192.168.46.133:22003,192.168.46.134:22003,192.168.46.135:22003")
+
+
+sh.enableSharding("test")
+
+ db.runCommand({cfgReplSet:1});  
+
+非第一次启动时
+
+
+//在三台机器上都执行这条命令
+bin/mongod --configsvr --replSet cfgReplSet --dbpath /data/mongodbtest/config/data --port 21000 --logpath /data/mongodbtest/config/log/config.log --fork
+
+/三台机器分别执行
+//分片一 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard1ReplSet --port 22001 --dbpath /data/mongodbtest/shard1/data  --logpath /data/mongodbtest/shard1/log/shard1.log --fork --nojournal
+
+//分片二 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard2ReplSet --port 22002 --dbpath /data/mongodbtest/shard2/data  --logpath /data/mongodbtest/shard2/log/shard2.log --fork --nojournal  
+
+//分片三 在三台机器上都执行这条命令
+bin/mongod --shardsvr --replSet shard3ReplSet --port 22003 --dbpath /data/mongodbtest/shard3/data  --logpath /data/mongodbtest/shard3/log/shard3.log --fork --nojournal 
+
+bin/mongos  --configdb cfgReplSet/192.168.46.133:21000,192.168.46.134:21000,192.168.46.135:21000 --port  20000  --logpath  /data/mongodbtest/mongos/log/mongos.log --fork
+
+bin/mongo --host 192.168.46.133 --port 20000
+
+
+//用户创建授权
+
+db.createUser(
+...   {
+...     user: "mongo",
+...     pwd: "mongo",
+...     roles: [ { role: "readWrite", db: "mytest" } ]
+...   }
+... )
+//切换到当前数据库验证
+db.auth('mongo','mongo')
