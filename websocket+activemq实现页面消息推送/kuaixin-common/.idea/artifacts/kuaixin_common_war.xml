@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="war" name="kuaixin-common:war">
-    <output-path>$PROJECT_DIR$/target</output-path>
-    <root id="archive" name="kuaixin-common.war">
-      <element id="artifact" artifact-name="kuaixin-common:war exploded" />
-    </root>
-  </artifact>
-</component>
